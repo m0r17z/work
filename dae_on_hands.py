@@ -105,6 +105,6 @@ def new_trainer(pars, data):
 
 
 def make_report(pars, trainer, data):
-    return {'train_loss': trainer.score(trainer.eval_data['train']),
-            'val_loss': trainer.score(trainer.eval_data['val'])}
+    return {'train_loss': trainer.score(*trainer.eval_data['train']),
+            'val_loss': trainer.score(*trainer.eval_data['val'])}
 
