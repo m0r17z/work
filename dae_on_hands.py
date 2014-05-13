@@ -63,6 +63,12 @@ def load_data(pars):
 
     return X, VX
 
+def generate_dict(trainer,data):
+    trainer.val_key = 'val'
+    trainer.eval_data = {}
+    trainer.eval_data['train'] = ([data[0]])
+    trainer.eval_data['val'] = ([data[1]])
+
 
 def new_trainer(pars, data):
     X, VX = data
@@ -92,12 +98,13 @@ def new_trainer(pars, data):
         m,
         stop=stop, pause=pause, report=reporter,
         interrupt=interrupt)
-    t.val_key = 'val'
-    t.eval_data['val'] = ([VX])
+
+    generate_dict(t, data)
 
     return t
 
 
 def make_report(pars, trainer, data):
-    return {'val_loss': trainer.score(data[1])}
+    return {'train_loss': trainer.score(trainer.eval_data['train']),
+            'val_loss': trainer.score(trainer.eval_data['val'])}
 
