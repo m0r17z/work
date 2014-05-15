@@ -63,7 +63,7 @@ def load_data(pars):
 
     return X, VX
 
-def generate_dict(trainer,data):
+def make_data_dict(trainer,data):
     trainer.val_key = 'val'
     trainer.eval_data = {}
     trainer.eval_data['train'] = ([data[0]])
@@ -99,7 +99,7 @@ def new_trainer(pars, data):
         stop=stop, pause=pause, report=reporter,
         interrupt=interrupt)
 
-    generate_dict(t, data)
+    make_data_dict(t, data)
 
     return t
 
