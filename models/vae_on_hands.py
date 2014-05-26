@@ -3,7 +3,7 @@ import random
 import signal
 import os
 
-from breze.learn.autoencoder import DenoisingAutoEncoder
+from breze.learn.sgvb import VariationalAutoEncoder
 from breze.learn.trainer.trainer import Trainer
 from breze.learn.trainer.report import KeyPrinter, JsonPrinter
 import climin.initialize
@@ -13,7 +13,7 @@ from sklearn.grid_search import ParameterSampler
 
 def preamble(i):
     train_folder = os.path.dirname(os.path.realpath(__file__))
-    module = os.path.join(train_folder, 'dae_on_hands.py')
+    module = os.path.join(train_folder, 'vae_on_hands.py')
     script = '/nthome/maugust/git/alchemie/scripts/alc.py'
     runner = 'python %s run %s' % (script, module)
 
@@ -21,7 +21,7 @@ def preamble(i):
     pre += '#SUBMIT: gpu=no\n'
 
     minutes_before_3_hour = 15
-    slurm_preamble = '#SBATCH -J DAE_2hiddens_on_hands_%d\n' % (i)
+    slurm_preamble = '#SBATCH -J VAE_2hiddens_on_hands_%d\n' % (i)
     slurm_preamble += '#SBATCH --mem=15000\n'
     slurm_preamble += '#SBATCH --nice=1\n'
     slurm_preamble += '#SBATCH --signal=INT@%d\n' % (minutes_before_3_hour*60)
@@ -44,11 +44,10 @@ def draw_pars(n=1):
             return 'rmsprop', sample
 
     grid = {
-        'n_hidden': [[200,200,10,200,200],[500,500,10,500,500],[1000,1000,10,1000,1000],[700,700,10,700,700],[100,100,10,100,100],[50,50,10,50,50]],
-        'hidden_transfers': [['sigmoid','sigmoid','identity','sigmoid','sigmoid'], ['tanh','tanh','identity','tanh','tanh'], ['rectifier','rectifier','identity','rectifier','rectifier']],
-	'c_noise': [0.1,0.2,0.01,0.02,0.5],
+        'n_hiddens': [[[200,200],10,[200,200]],[[500,500],10,[500,500]],[[1000,1000],10,[1000,1000]],[[700,700],10,[700,700]],[[100,100],10,[100,100]],[[50,50],10,[50,50]]],
+        'hidden_transfers': [[['sigmoid','sigmoid'],'identity',['sigmoid','sigmoid']], [['tanh','tanh'],'identity',['tanh','tanh']], [['rectifier','rectifier'],'identity',['rectifier','rectifier']]],
         'par_std': [1.5, 1, 1e-1, 1e-2,1e-3,1e-4,1e-5],
-	'batch_size': [10000,20000,50000,5000],
+	    'batch_size': [10000,20000,50000,5000],
         'optimizer': OptimizerDistribution(),
     }
 
@@ -74,9 +73,9 @@ def make_data_dict(trainer,data):
 def new_trainer(pars, data):
     input_size = 54
     batch_size = pars['batch_size']
-    m = DenoisingAutoEncoder(input_size, pars['n_hidden'],
-            hidden_transfers=pars['hidden_transfers'], out_transfer='identity',
-            loss='squared', c_noise = pars['c_noise'], batch_size = batch_size,
+    m = VariationalAutoEncoder(input_size, pars['n_hiddens'][0], pars['n_hiddens'][1], pars['n_hiddens'][2],
+            pars['hidden_transfers_encode'], pars['hidden_transfers_decode'], latent_prior='white_gauss',
+            latent_posterior='diag_gauss', visible='diag_gauss', batch_size = batch_size,
             optimizer=pars['optimizer'])
     climin.initialize.randomize_normal(m.parameters.data, 0, pars['par_std'])
 
